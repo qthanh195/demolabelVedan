@@ -51,8 +51,8 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
         origin_image = np.ones((480, 640), dtype=np.uint8) * 255
         label_image = origin_image.copy()
         # Chụp một ảnh từ camera 
-        # image = self.get_image()
-        image = cv2.imread("E:/test.jpg")
+        image = self.get_image()
+        # image = cv2.imread("E:/test.jpg")
         if image is None:
             print("Không lấy được ảnh từ camera!")
             return "No Image", pallet_detect, 0.0, self._image_to_base64(origin_image),self._image_to_base64(label_image)

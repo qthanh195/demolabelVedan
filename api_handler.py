@@ -68,9 +68,10 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
             origin_image = cv2.putText(image, f"None Labels",(100,100),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
         else:
             id, class_name, confidence = self.classifiLabel(label_image)
-            # print("idddddddddddddddddddddd: ", id)
+            if id == None:
+                return "No Image", pallet_detect, float(f"{0:.2f}"), self._image_to_base64(origin_image),self._image_to_base64(label_image)
             # Nếu là nhãn tdc thì kiểm tra xem là nhãn tdc nào
-            if id == 22: # 22: 'image30_1' -> tdc
+            elif id == 22: # 22: 'image30_1' -> tdc
                class_name, label_image = self.classifi_tdc_with_ocr(label_image)
             elif id == 40: # 40 : 'image47_1' -> recycling
                 text_class, img_new = self.classify_label_logo_recycling(label_image)

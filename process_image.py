@@ -2,6 +2,14 @@ import cv2
 import numpy as np
 from rapidfuzz import process, fuzz
 from PIL import Image, ImageDraw, ImageFont
+import os
+from skimage.metrics import structural_similarity as ssim
+import torch
+import torchvision.transforms as transforms
+import torchvision.models as models
+from PIL import Image
+from sklearn.metrics.pairwise import cosine_similarity
+import imagehash
 
 class ProcessImage:
     def __init__(self):
@@ -146,3 +154,102 @@ class ProcessImage:
         warped = cv2.warpPerspective(image, M, (width, height))
 
         return warped
+    
+    def compare_image(self, image, name_image_in_folder, image_folder_path = "data_list"):
+        """
+        So sánh hai ảnh và trả về độ tương đồng.
+        
+        Args:
+            image: Ảnh cần so sánh (numpy.ndarray).
+            name_image_in_folder: Tên ảnh trong thư mục để so sánh.
+            image_folder_path: Đường dẫn đến thư mục chứa ảnh để so sánh.
+        
+        Returns:
+            Độ tương đồng giữa hai ảnh (float).
+        """
+        
+        name_image_in_folder = name_image_in_folder + ".jpg"
+        # Đọc ảnh từ thư mục
+        image_in_folder = cv2.imread(os.path.join(image_folder_path, name_image_in_folder))
+        if image_in_folder is None:
+            return 0.0
+
+        max_score = 0.0
+        angles = [0, 90, 180, 270]
+
+        for angle in angles:
+            # Xoay ảnh trong thư mục
+            if angle == 0:
+                rotated = image_in_folder
+            else:
+                rotated = self.rotate_image(image_in_folder, angle)
+
+            # Resize về cùng kích thước với ảnh đầu vào
+            if rotated.shape != image.shape:
+                rotated = cv2.resize(rotated, (image.shape[1], image.shape[0]))
+
+            # Chuyển về float32 nếu cần
+            # So sánh 2 ảnh
+            embed1 = self._get_embedding(image)
+            embed2 = self._get_embedding(rotated)
+
+            score = cosine_similarity([embed1], [embed2])[0][0]
+            print(f"Angle {angle} score {score:.4f}")
+
+            if score > max_score:
+                max_score = score
+
+        return max_score
+
+    def _get_embedding(self, image):
+        # convert image to rgb
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image)
+        
+        # Dùng model ResNet50 pretrained (bỏ phần fully-connected)
+        model = models.resnet50(pretrained=True)
+        model = torch.nn.Sequential(*list(model.children())[:-1])  # bỏ phần cuối
+        model.eval()
+
+        # Chuyển ảnh về chuẩn đầu vào
+        transform = transforms.Compose([
+            transforms.Resize((480, 480)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                std=[0.229, 0.224, 0.225])
+        ])
+        input_tensor = transform(image).unsqueeze(0)  # batch size 1
+        with torch.no_grad():
+            embedding = model(input_tensor).squeeze().numpy()  # 2048 chiều
+        return embedding
+    
+    def compare_image_hash(self, image, name_image_in_folder, image_folder_path = "data_list"):
+        """
+        So sánh hai ảnh bằng cách sử dụng hash và trả về độ tương đồng.
+        
+        Args:
+            image: Ảnh cần so sánh (numpy.ndarray).
+            name_image_in_folder: Tên ảnh trong thư mục để so sánh.
+            image_folder_path: Đường dẫn đến thư mục chứa ảnh để so sánh.
+        
+        Returns:
+            Độ tương đồng giữa hai ảnh (float).
+        """
+        
+        name_image_in_folder = name_image_in_folder + ".jpg"
+        # Đọc ảnh từ thư mục
+        image_in_folder = cv2.imread(os.path.join(image_folder_path, name_image_in_folder))
+        if image_in_folder is None:
+            return 0.0
+
+        # Chuyển đổi ảnh sang định dạng PIL
+        pil_image = Image.fromarray(image)
+        pil_image_in_folder = Image.fromarray(image_in_folder)
+
+        # Tính hash cho cả hai ảnh
+        hash1 = imagehash.phash(pil_image)
+        hash2 = imagehash.phash(pil_image_in_folder)
+
+        # Tính độ tương đồng dựa trên khoảng cách Hamming 
+        score = (hash1 - hash2) / len(hash1.hash.flatten())
+        return score

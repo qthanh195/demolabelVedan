@@ -43,73 +43,26 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
             origin_image (base64): Ảnh gốc chụp từ camera
             label_image (base64): Ảnh nhãn được cắt từ ảnh gốc
         """
-        
-        label_names = ["A", "B", "C", "D", "E"]
-        list_name_label = [name_a, name_b, name_c, name_d, name_e]
-        list_threshold = [thresh_a, thresh_b, thresh_c, thresh_d, thresh_e]
 
         label_detect = "None Labels"
         pallet_detect = "Pallet F"
         conf = 0.00
-        origin_image = np.ones((480, 640), dtype=np.uint8) * 255
-        label_image = origin_image.copy()
 
-        # Chụp ảnh từ camera
-        image = self.get_image()
-        if image is None:
-            print("Không lấy được ảnh từ camera!")
-            return "No Image", pallet_detect, 0.0, self._image_to_base64(origin_image), self._image_to_base64(label_image)
-
-        # Đảm bảo ảnh là BGR
-        if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-
-        # Phát hiện nhãn
-        label_image, rect_label = self.detectLabel(image)
-        cv2.imwrite("label_image1.jpg", label_image)
-        if rect_label is None:
+        image_origin, label_image, rect_label, label_detect, confidence = self._get_image_and_classify()
+        
+        if image_origin is None:
+            return label_detect, pallet_detect, conf, None, None
+        
+        if label_image is None:
             print("No Label!")
-            origin_image = cv2.putText(image, "None Labels", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
-            return label_detect, pallet_detect, conf, self._image_to_base64(origin_image), self._image_to_base64(label_image)
+            return label_detect, pallet_detect, conf, self._image_to_base64(image_origin), self._image_to_base64(np.ones((100, 100), dtype=np.uint8) * 255)
+        
+        conf = float(f"{confidence:.2f}")
+        
+        cv2.rectangle(image_origin, rect_label[0], rect_label[1], (0, 255, 0), thickness=6)
+        cv2.putText(image_origin, f"{label_detect} - {conf}", (rect_label[0][0], rect_label[0][1] - 30), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
 
-        id, class_name, confidence = self.classifiLabel(label_image)
-        if id is None:
-            return "No Image", pallet_detect, 0.0, self._image_to_base64(origin_image), self._image_to_base64(label_image)
-        print(f"ID: {id}, Class: {class_name}, Confidence: {confidence}")
-        compare_image_score = self.compare_image(label_image, name_image_in_folder = class_name)
-        # compare_image_score = self.compare_image_hash(label_image, name_image_in_folder = class_name)
-        print(f"Compare Image Score: {compare_image_score}")
-        # Xử lý nhãn đặc biệt
-        class_name, label_image = self._handle_special_labels(id, class_name, label_image)
-        cv2.imwrite("label_image.jpg", label_image)
-        print(class_name)
-        print(rect_label)
-        origin_image = cv2.rectangle(image, rect_label[0], rect_label[1], (0, 255, 0), thickness=6)
-        match_class = re.search(r"image(\d+)_1", class_name)
-        if match_class:
-            number_classname = int(match_class.group(1))
-            label_detect = f"label{number_classname}"
-            cv2.putText(
-                origin_image,
-                f"Label {number_classname} - {confidence:.2f}",
-                (rect_label[0][0], rect_label[0][1] - 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6
-            )
-            conf = float(f"{confidence:.2f}")
-
-            # Kiểm tra pallet
-            for idx, name_label in enumerate(list_name_label):
-                match_label = re.search(r"label(\d+)", name_label)
-                if match_label and int(match_label.group(1)) == number_classname:
-                    if conf >= list_threshold[idx]:
-                        pallet_detect = f"Pallet {label_names[idx]}"
-                    return label_detect, pallet_detect, conf, self._image_to_base64(origin_image), self._image_to_base64(label_image)
-            for idx, name_label in enumerate(list_name_label):
-                if name_label == "other label":
-                    pallet_detect = f"Pallet {label_names[idx]}"
-                    return label_detect, pallet_detect, conf, self._image_to_base64(origin_image), self._image_to_base64(label_image)
-
-        return label_detect, pallet_detect, conf, self._image_to_base64(origin_image), self._image_to_base64(label_image)
+        return label_detect, pallet_detect, conf, self._image_to_base64(image_origin), self._image_to_base64(label_image)
 
     def _handle_special_labels(self, id, class_name, label_image):
         if id == 22:  # tdc
@@ -143,3 +96,45 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
     def api_close_camera(self):
         self.close_camera()
         print("Đã tắt camera." if not self.is_open else "Đang mở camera.")
+    
+    def _get_image_and_classify(self):
+        """
+        Lấy ảnh từ camera và phân loại nhãn.
+        Returns:
+            label_image: Ảnh nhãn được cắt ra (hoặc None nếu không có).
+            rect_label: Vị trí nhãn (hoặc None nếu không có).
+            class_name: Tên nhãn phân loại (hoặc None nếu không có).
+            confidence: Độ tin cậy (float, 0.0 nếu không có).
+        """
+        # Chụp ảnh từ camera
+        image = self.get_image()
+        if image is None:
+            print("Không lấy được ảnh từ camera!")
+            return None, None, None, None, 0.0
+
+        # Đảm bảo ảnh là BGR
+        if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+        # Phát hiện nhãn
+        label_image, rect_label = self.detectLabel(image)
+        if label_image is None:
+            print("No Label!")
+            return image, None, None, None, 0.0
+
+        # Chỉ gọi phân loại khi label_image hợp lệ
+        id, class_name, confidence = self.classifiLabel(label_image)
+        if label_image is None or not isinstance(label_image, np.ndarray) or label_image.size == 0:
+            return image, None, None, None, 0.0
+
+        # Xử lý nhãn đặc biệt nếu có
+        class_name, label_image = self._handle_special_labels(id, class_name, label_image)
+        cv2.imwrite("label_image.jpg", label_image)
+        print("Class: ", class_name)
+        return image, label_image, rect_label, class_name, confidence
+        
+    def add_label(self):
+        """
+        Thêm nhãn vào pallet
+        """
+        pass

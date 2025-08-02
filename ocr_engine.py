@@ -44,6 +44,7 @@ class OCR_Engine(ProcessImage, AiHander):
         
     def classifi_tdc_with_ocr(self, image): 
         # image = cv2.imread(image)
+        new_img = None
         w, h = image.shape[1], image.shape[0]
         # tạo mask với kích thước lớn hơn ảnh gốc 10
         mask = np.zeros((h+10, w+10, 3), dtype=np.uint8)
@@ -109,8 +110,8 @@ class OCR_Engine(ProcessImage, AiHander):
                             text1 = pytesseract.image_to_string(image_crop1, config=r'--oem 3 --psm 8 -l eng')
                             text2 = pytesseract.image_to_string(image_crop2, config=r'--oem 3 --psm 7 -l jpn')
 
-                            text1 = self.get_best_match(''.join(text1.split()).strip().lower(), valid_tdc_kg)
-                            text2 = self.get_best_match(''.join(text2.split()).strip().upper(), valid_tdc)
+                            idx_text1 = self.get_best_match(''.join(text1.split()).strip().lower(), valid_tdc_kg)
+                            idx_text2 = self.get_best_match(''.join(text2.split()).strip().upper(), valid_tdc)
 
                             if text1 is not None:
                                 image_crop = self.draw_text_with_pillow(image_crop, text1, (x1, y1-20), font_path="simsun.ttc", font_size=20, color=(0, 255, 0))
@@ -120,41 +121,43 @@ class OCR_Engine(ProcessImage, AiHander):
                             print("text1:", text1)
                             print("text2:", text2)
                             
-                            if text1 == "20kg" and text2 == "でん粉「TW-100」":
-                                return "image30_1", image_crop
-                            elif text1 == "18kg" and text2 == "食品用タピオカでん粉「BK-V」":
-                                return "image49_1", image_crop
-                            elif text1 == "20kg" and text2 == "食品用タピオカでん粉「BK-V」":
-                                return "image50_1", image_crop
-                            elif text1 == "25kg" and text2 == "食品用タピオカでん粉「BK-V3」":
-                                return "image51_1", image_crop
-                            elif text1 =="25kg" and text2 == "イモのちから":
-                                return "image52_1", image_crop
-                            elif text1 == "20kg" and text2 == "食品用タピオカでん粉「ES-5」":
-                                return "image53_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「SK-08」":
-                                return "image54_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV3」":
-                                return "image55_1", image_crop
-                            elif text1 == "12.5kg" and text2 == "食品用タピオカでん粉「タピオカV」":
-                                return "image56_1", image_crop
-                            elif text1 == "20kg" and text2 == "食品用タピオカでん粉「FM-5」":
-                                return "image57_1", image_crop
-                            elif text1 == "20kg" and text2 == "食品用タピオカでん粉「タピオカV」":
-                                return "image58_1", image_crop
-                            elif text1 == "20kg" and text2 == "食品用タピオカでん粉「RT-90」":
-                                return "image59_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV」":
-                                return "image60_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「BK-V」":
-                                return "image61_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「タピオカV2」":
-                                return "image62_1", image_crop
-                            elif text1 =="25kg" and text2 == "食品用タピオカでん粉「BK-V7」":
-                                return "image63_1", image_crop
-                            else:
-                                return "", image_crop
-                            
+                            match (idx_text1, idx_text2):
+                                case (0, 0):  # "20kg", "でん粉「TW-100」"
+                                    return "Label30", image_crop
+                                case (3, 1):  # "18kg", "食品用タピオカでん粉「BK-V」"
+                                    return "Label49", image_crop
+                                case (0, 1):  # "20kg", "食品用タピオカでん粉「BK-V」"
+                                    return "Label50", image_crop
+                                case (1, 2):  # "25kg", "食品用タピオカでん粉「BK-V3」"
+                                    return "Label51", image_crop
+                                case (1, 3):  # "25kg", "イモのちから"
+                                    return "Label52", image_crop
+                                case (0, 4):  # "20kg", "食品用タピオカでん粉「ES-5」"
+                                    return "Label53", image_crop
+                                case (1, 5):  # "25kg", "食品用タピオカでん粉「SK-08」"
+                                    return "Label54", image_crop
+                                case (1, 6):  # "25kg", "食品用タピオカでん粉「タピオカV3」"
+                                    return "Label55", image_crop
+                                case (2, 7):  # "12.5kg", "食品用タピオカでん粉「タピオカV」"
+                                    return "Label56", image_crop
+                                case (0, 8):  # "20kg", "食品用タピオカでん粉「FM-5」"
+                                    return "Label57", image_crop
+                                case (0, 7):  # "20kg", "食品用タピocaでん粉「タピオカV」"
+                                    return "Label58", image_crop
+                                case (0, 9):  # "20kg", "食品用タピオカでん粉「RT-90」"
+                                    return "Label59", image_crop
+                                case (1, 7):  # "25kg", "食品用タピオカでん粉「タピオカV」"
+                                    return "Label60", image_crop
+                                case (1, 1):  # "25kg", "食品用タピオカでん粉「BK-V」"
+                                    return "Label61", image_crop
+                                case (1, 10): # "25kg", "食品用タピオカでん粉「タピオカV2」"
+                                    return "Label62", image_crop
+                                case (1, 11): # "25kg", "食品用タピオカでん粉「BK-V7」"
+                                    return "Label63", image_crop
+                                case _:
+                                    return "", image_crop
+        return "", new_img
+
     def classify_label_logo_recycling(self, image):
         """"
             1. Phát hien logo recycling
@@ -226,28 +229,29 @@ class OCR_Engine(ProcessImage, AiHander):
                             text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 6 -l vie')
                             text = text.replace("\n", "")
                             # text = text.replace(" ", "")
-                            text = self.get_best_match(text, valid_label_recyling)
+                            idx_text = self.get_best_match(text, valid_label_recyling)
+                            # idx_text = valid_label_recyling.index(text) if text in valid_label_recyling else None
                             print("text:", text)
-                            if text == "TINH BỘT OXY HÓA (TINH BỘT BIẾN TÍNH ET) Dùng cho thực phẩm":
-                                return "image64_1", image_crop
-                            elif text == "CATIONIC STARCH (TINH BỘT BIẾN TÍNH JT) Cấp Công Nghiệp":
-                                return "image65_1", image_crop
-                            elif text == "DISTARCH PHOSPHAT (TINH BỘT BIẾN TÍNH CT) Dùng cho thực phẩm":
-                                return "image66_1", image_crop
-                            elif text == "DISTARCH ADIPAT ACETYLAT (TINH BỘT BIẾN TÍNH CBA) Dùng cho thực phẩm":
-                                return "image67_1", image_crop
-                            elif text == "DISTARCH PHOSPHAT ACETYLAT (TINH BỘT BIẾN TÍNH CB) Dùng cho thực phẩm":
-                                return "image68_1", image_crop
-                            elif text == "ACETYLATED OXYDIZED STARCH (TINH BỘT BIẾN TÍNH EB) Dùng cho thực phẩm":
-                                return "image69_1", image_crop
-                            elif text == "STARCH ACETATE ESTE HÓA VỚI VINYL ACETATE (TINH BỘT BIẾN TÍNH BS) Dùng cho thực phẩm":
-                                return "image70_1", image_crop
-                            elif text == "TINH BỘT NATRI OCTENYL SUCCINAT (TINH BỘT BIẾN TÍNH KS) Dùng cho thực phẩm":
-                                return "image71_1", image_crop
-                            elif text == "TINH BỘT ACETAT (TINH BỘT BIẾN TÍNH BS (A)) Dùng cho thực phẩm":
-                                return "image72_1", image_crop
-                            else:
-                                return "", new_img
+                            match idx_text:
+                                case 3:
+                                    return "Label64", image_crop
+                                case 7:
+                                    return "Label65", image_crop
+                                case 5:
+                                    return "Label66", image_crop
+                                case 4:
+                                    return "Label67", image_crop
+                                case 1:
+                                    return "Label68", image_crop
+                                case 6:
+                                    return "Label69", image_crop
+                                case 8:
+                                    return "Label70", image_crop
+                                case 2:
+                                    return "Label71", image_crop
+                                case 0:
+                                    return "Label72", image_crop
+
         return "", new_img
     
     def classify_label_logo_halal(self, image):
@@ -302,6 +306,7 @@ class OCR_Engine(ProcessImage, AiHander):
                 # Lọc contours theo diện tích nhỏ hơn max_area
                 max_area = (w+10) * (h+10)
                 filtered_contours = [contour for contour in contours if cv2.contourArea(contour) < max_area]
+                
                 if filtered_contours:
                     # Tìm contour lớn nhất trong danh sách đã lọc
                     contour = max(filtered_contours, key=cv2.contourArea)
@@ -313,19 +318,21 @@ class OCR_Engine(ProcessImage, AiHander):
                     image_crop = self.crop_rotated_contour(mask, contour)
                     zone_text = image_crop[230:330, 70:650]
                     text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
-                    text = self.get_best_match(text, valid_label_halal)
+                    idx_text = self.get_best_match(text, valid_label_halal)
                     image_crop = self.draw_text_with_pillow(image_crop, text, (120, 230), font_size=28, color=(0, 255, 0))
                     
-                    if text == "AL-69 (E1412) (FOOD GRADE)":
-                        return "image73_1", image_crop
-                    elif text == "AL-43F (E1450) (FOOD GRADE)":
-                        return "image74_1", image_crop
-                    elif text == "AL-58 (E1422) (FOOD GRADE)":
-                        return "image75_1", image_crop
-                    elif text == "AL-94 (FOOD GRADE)":
-                        return "image45_1", image_crop
-                    else:
-                        return "", image_crop
+                    match idx_text:
+                        case 0:  # AL-69 (E1412) (FOOD GRADE)
+                            return "Label73", image_crop
+                        case 1:  # AL-43F (E1450) (FOOD GRADE)
+                            return "Label74", image_crop
+                        case 2:  # AL-58 (E1422) (FOOD GRADE)
+                            return "Label75", image_crop
+                        case 3:  # AL-94 (FOOD GRADE)
+                            return "Label45", image_crop
+                        case _:
+                            return "", image_crop
+
         return "", new_img
     
     def classify_label_logo_unu(self, image):
@@ -391,15 +398,20 @@ class OCR_Engine(ProcessImage, AiHander):
                     # zone_text = image_crop[160:350, 180:1300]
                     zone_text = image_crop[160:350, 800:1300]
                     text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
-                    text = self.get_best_match(text, valid_label_unu)
+                    idx_text = self.get_best_match(text, valid_label_unu)
                     text = f"サナス{text}"
                     image_crop = self.draw_text_with_pillow(image_crop, text, (300, 130),font_size=50, color=(0, 255, 0))
-                    if text == "サナス510":
-                        return "image76_1", image_crop
-                    elif text == "サナスTS01V":
-                        return "image77_1", image_crop
-                    elif text == "サナス514":
-                        return "image34_1", image_crop
-                    else:
-                        return "", image_crop
+                    
+                    print("text:", text)
+                    
+                    match idx_text:
+                        case 0:  # "サナス514"
+                            return "Label34", image_crop
+                        case 1:  # "サナス510"
+                            return "Label76", image_crop
+                        case 2:  # "サナスTS01V"
+                            return "Label77", image_crop
+                        case _:
+                            return "", image_crop
+
         return "", new_img

@@ -87,7 +87,11 @@ class ProcessImage:
 
     def get_best_match(self, text, valid_list, score_cutoff=70):
         match = process.extractOne(text, valid_list, scorer=fuzz.ratio, score_cutoff=score_cutoff)
-        return valid_list.index(match[0]) if match else None
+        if match:
+            # match[2]: index trong valid_list, match[1]: score (độ tương đồng)
+            return match[2], match[1]/100
+        else:
+            return None, None
 
     def draw_text_with_pillow(self, image, text, position, font_path="simsun.ttc", font_size=20, color=(0, 255, 0)):
         """

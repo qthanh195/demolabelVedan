@@ -1,8 +1,10 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+import numpy as np
 from schemas.image_schemas import ImageCaptureRequest
 from api_handler import ApiHandler
+from log import logging
 
 api_handel = ApiHandler()
 app = FastAPI()
@@ -18,29 +20,46 @@ app.add_middleware(
 
 @app.post("/image_capture")
 def capture_image(req: ImageCaptureRequest):
-    label_detected, pallet_detect, confidence, origin_image, cropped_label = api_handel.analyze_image(
-        req.name_a, req.name_b, req.name_c, 
-        req.name_d, req.name_e, req.name_f, 
-        req.thresh_a, req.thresh_b, req.thresh_c, 
-        req.thresh_d, req.thresh_e, req.thresh_f
-    )
-    print("label_detected: ", label_detected)
-    print("pallet_detect: ", pallet_detect)
-    print("confidence: ", f"{confidence:.2f}")
+    pallet_infos = [
+            (req.name_a, req.thresh_a),
+            (req.name_b, req.thresh_b),
+            (req.name_c, req.thresh_c),
+            (req.name_d, req.thresh_d),
+            (req.name_e, req.thresh_e),
+            (req.name_f, req.thresh_f),
+        ]
+    results = api_handel.analyze_image(pallet_infos)
+
+    print("label_detected: ", results["label_detected"])
+    print("pallet_detect: ", results["pallet_detected"])
+    print("confidence_detect: ", f"{(results['confidence_detect'] or 0):.2f}")
+    print("confidence_classify: ", f"{(results['confidence_classify'] or 0):.2f}")
+    print("confidence_ocr: ", f"{(results['confidence_ocr'] or 0):.2f}")
+    print("confidence: ", f"{(results['confidence'] or 0):.2f}")
+
     return JSONResponse(content={
-        "label_detected": label_detected,
-        "pallet_detect": pallet_detect,
-        "confidence": f"{confidence:.2f}",
-        "origin_image": origin_image,
-        "cropped_image": cropped_label
+        "label_detected": (results["label_detected"] if results["label_detected"] else "No Label Detected"),
+        "pallet_detect": (results["pallet_detected"] if results["pallet_detected"] else "Pallet F"),
+        "confidence_detect": f"{(results['confidence_detect'] or 0):.2f}",
+        "confidence_classify": f"{(results['confidence_classify'] or 0):.2f}",
+        "confidence_ocr": f"{(results['confidence_ocr'] or 0):.2f}",
+        "confidence": f"{(results['confidence'] or 0):.2f}",
+        "origin_image": (
+            api_handel._image_to_base64(results["origin_image"])
+            if results["origin_image"] is not None and isinstance(results["origin_image"], np.ndarray) and results["origin_image"].size > 0 else ""
+        ),
+        "cropped_image": (
+            api_handel._image_to_base64(results["label_image"])
+            if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
+        )
     })
 
-@app.on_event("startup")
-def startup_event():
-    print("Khởi động server và mở camera...")
-    api_handel.api_open_camera()
+# @app.on_event("startup")
+# def startup_event():
+#     print("Khởi động server và mở camera...")
+#     api_handel.api_open_camera()
 
-@app.on_event("shutdown")
-def shutdown_event():
-    print("Đang tắt server và đóng camera...")
-    api_handel.close_camera()
+# @app.on_event("shutdown")
+# def shutdown_event():
+#     print("Đang tắt server và đóng camera...")
+#     api_handel.close_camera()

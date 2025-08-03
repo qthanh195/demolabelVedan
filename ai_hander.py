@@ -66,13 +66,11 @@ class AiHander:
     
     def detectLabel(self, image):
         # print(image)
-        crop, rect_label = None, None
+        crop, rect_label, confident_detect = None, None, 0.00
         results = model_segment_label.predict(image, conf=0.8, retina_masks=True)
-        # # print("conf detect")
-        # results = model_obb_label(image, conf=0.5)
-        if len(results[0].masks.xy) == 0:
+        if not results or results[0].masks is None or len(results[0].masks.xy) == 0:
             print("No Label detected!")
-            return None, None
+            return crop, rect_label, confident_detect
         
         for idx, result in enumerate(results):
             for i, seg in enumerate(result.masks.xy):
@@ -97,16 +95,17 @@ class AiHander:
                 w, h = size
                 print("confident: ", result.boxes.conf[i].item())
                 crop = rotated[y:y+h, x:x+w]
-        return crop, rect_label 
+                confident_detect = result.boxes.conf[i].item()
+        return crop, rect_label, confident_detect
         
     def classifiLabel(self, image):
         if image is None or not isinstance(image, np.ndarray) or image.size == 0:
             return None, None, 0.0
         id, class_name, confidence = None, None, None
-        results = model_classifi_label.predict(image, conf=0.5)
-        if results[0].probs.top1conf.item() >= 0.8:
-            id = results[0].probs.top1
-            class_name = custom_class_names_model_classifi.get(id, results[0].names[id])
-            print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
-            confidence = results[0].probs.top1conf.item()
+        results = model_classifi_label.predict(image)
+        # if results[0].probs.top1conf.item() >= 0.8:
+        id = results[0].probs.top1
+        class_name = custom_class_names_model_classifi.get(id, results[0].names[id])
+        print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
+        confidence = results[0].probs.top1conf.item()
         return id, class_name, confidence

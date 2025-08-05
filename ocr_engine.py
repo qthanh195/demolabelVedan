@@ -36,7 +36,7 @@ valid_label_halal = ["AL-69 (E1412) (FOOD GRADE)",
                      "AL-58 (E1422) (FOOD GRADE)", 
                      "AL-94 (FOOD GRADE)",]
 
-valid_label_unu = ["514", "510", "TS01V"]
+valid_label_unu = ["サナス514", "サナス510", "サナスTS01V"]
 
 class OCR_Engine(ProcessImage, AiHander):
     def __init__(self):
@@ -162,8 +162,8 @@ class OCR_Engine(ProcessImage, AiHander):
                                 case (1, 11): # "25kg", "食品用タピオカでん粉「BK-V7」"
                                     return "Label-63", image_crop, confidence_ocr
                                 case _:
-                                    return "Group-0 (TDC)", image_crop, confidence_ocr
-        return "Group-0 (TDC)", new_img, confidence_ocr
+                                    return "Group-04 (TDC)", image_crop, confidence_ocr
+        return "Group-04 (TDC)", new_img, confidence_ocr
 
     def classify_label_logo_recycling(self, image):
         """"
@@ -260,7 +260,7 @@ class OCR_Engine(ProcessImage, AiHander):
                                 case 0:
                                     return "Label-72", image_crop, confidence_ocr
 
-        return "Group-1", new_img, confidence_ocr
+        return "Group-01", new_img, confidence_ocr
 
     def classify_label_logo_halal(self, image):
         """"
@@ -340,9 +340,9 @@ class OCR_Engine(ProcessImage, AiHander):
                         case 3:  # AL-94 (FOOD GRADE)
                             return "Label-45", image_crop, confidence_ocr
                         case _:
-                            return "Group-2", image_crop, confidence_ocr
+                            return "Group-02", image_crop, confidence_ocr
 
-        return "Group-2", new_img, confidence_ocr
+        return "Group-02", new_img, confidence_ocr
 
     def classify_label_logo_unu(self, image):
         """"
@@ -408,8 +408,8 @@ class OCR_Engine(ProcessImage, AiHander):
                     # zone_text = image_crop[160:350, 180:1300]
                     zone_text = image_crop[160:350, 800:1300]
                     text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
-                    idx_text, confidence_ocr = self.get_best_match(text, valid_label_unu)
                     text = f"サナス{text}"
+                    idx_text, confidence_ocr = self.get_best_match(text, valid_label_unu)
                     image_crop = self.draw_text_with_pillow(image_crop, text, (300, 130),font_size=50, color=(0, 255, 0))
                     
                     print("text:", text)
@@ -422,6 +422,6 @@ class OCR_Engine(ProcessImage, AiHander):
                         case 2:  # "サナスTS01V"
                             return "Label-77", image_crop, confidence_ocr
                         case _:
-                            return "Group-3", image_crop, confidence_ocr
+                            return "Group-03", image_crop, confidence_ocr
 
-        return "Group-3", new_img, confidence_ocr
+        return "Group-03", new_img, confidence_ocr

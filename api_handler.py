@@ -23,6 +23,7 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
             "confidence_ocr": 0,
             "origin_image": None,
             "label_image": None,
+            "text": "",
         }
 
         logging.info("Bắt đầu phân tích ảnh...")
@@ -59,30 +60,30 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
             result_ui["pallet_detected"] = "F"
             logging.info("Không phát hiện pallet hợp lệ, gán pallet_detected là 'F'.")
 
-        
         result_ui["label_image"] = result["label_image"]
         result_ui["confidence_detect"] = result["confidence_detect"]
         result_ui["confidence_classify"] = result["confidence_classify"]
         result_ui["confidence_ocr"] = result["confidence_ocr"]
         result_ui["confidence"] = result["confidence"]
+        result_ui["text"] = result["text"]
 
         logging.info(f"Kết quả trả về UI: {result_ui}")
         return result_ui
 
     def _handle_special_labels(self, id, class_name, label_image):
         logging.debug(f"Xử lý nhãn đặc biệt: id={id}, class_name={class_name}")
-        class_name, label_image, confidence_ocr = class_name, label_image, 0
+        class_name, label_image, confidence_ocr, text = class_name, label_image, 0, ""
         match id:
             case 22:  # tdc
-                class_name, label_image, confidence_ocr = self.classifi_tdc_with_ocr(label_image)
+                class_name, label_image, confidence_ocr, text = self.classifi_tdc_with_ocr(label_image)
             case 40:  # recycling
-                class_name, label_image, confidence_ocr = self.classify_label_logo_recycling(label_image)
+                class_name, label_image, confidence_ocr, text = self.classify_label_logo_recycling(label_image)
             case 38:  # halal
-                class_name, label_image, confidence_ocr = self.classify_label_logo_halal(label_image)
+                class_name, label_image, confidence_ocr, text = self.classify_label_logo_halal(label_image)
             case 26:  # unu
-                class_name, label_image, confidence_ocr = self.classify_label_logo_unu(label_image)
+                class_name, label_image, confidence_ocr, text = self.classify_label_logo_unu(label_image)
         logging.debug(f"Kết quả nhãn đặc biệt: class_name={class_name}, confidence_ocr={confidence_ocr}")
-        return class_name, label_image, confidence_ocr
+        return class_name, label_image, confidence_ocr, text
             
     def _image_to_base64(self, image_np: np.ndarray) -> str:
         _, buffer = cv2.imencode('.jpg', image_np)
@@ -106,6 +107,7 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
             "confidence_classify": 0,
             "confidence_ocr": 0,
             "confidence": 0,
+            "text": "",
         }
         
         # Chụp ảnh từ camera
@@ -138,9 +140,10 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
         result_label_default["confidence_classify"] = confidence_classify
 
         if id in [22, 40, 38, 26]:  # Các nhãn đặc biệt
-            class_name, label_image, confidence_ocr = self._handle_special_labels(id, class_name, label_image)
+            class_name, label_image, confidence_ocr, text = self._handle_special_labels(id, class_name, label_image)
             result_label_default["confidence"] = confidence_ocr
             result_label_default["confidence_ocr"] = confidence_ocr
+            result_label_default["text"] = text
             logging.debug(f"Kết quả _handle_special_labels: class_name={class_name}, confidence_ocr={confidence_ocr}")
         else:
             result_label_default["confidence"] = confidence_classify

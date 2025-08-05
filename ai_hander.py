@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import numpy as np
 import cv2
+import logging
 
 model_logo_unu = YOLO("E:/2. GE/22. Vedan Vision Ocr\code/ai_label_project/ai_service\model\model_detect_logo_unu_v1.pt")
 model_segment_label = YOLO("E:/2. GE/22. Vedan Vision Ocr\code/ai_label_project/ai_service\model\detect_label_segment_v2.pt")
@@ -103,9 +104,10 @@ class AiHander:
             return None, None, 0.0
         id, class_name, confidence = None, None, None
         results = model_classifi_label.predict(image)
+        logging.debug(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
         if results[0].probs.top1conf.item() >= 0.6:
             id = results[0].probs.top1
             class_name = custom_class_names_model_classifi.get(id, results[0].names[id])
-            print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
+            # print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
             confidence = results[0].probs.top1conf.item()
         return id, class_name, confidence

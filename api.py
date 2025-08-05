@@ -53,7 +53,7 @@ def capture_image(req: ImageCaptureRequest):
             api_handel._image_to_base64(results["label_image"])
             if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
         ),
-        "text": "tdc - 20kg",
+        "text": (results["text"] if results["text"] else ""),
     })
 
 @app.on_event("startup")

@@ -103,9 +103,9 @@ class AiHander:
             return None, None, 0.0
         id, class_name, confidence = None, None, None
         results = model_classifi_label.predict(image)
-        # if results[0].probs.top1conf.item() >= 0.8:
-        id = results[0].probs.top1
-        class_name = custom_class_names_model_classifi.get(id, results[0].names[id])
-        print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
-        confidence = results[0].probs.top1conf.item()
+        if results[0].probs.top1conf.item() >= 0.6:
+            id = results[0].probs.top1
+            class_name = custom_class_names_model_classifi.get(id, results[0].names[id])
+            print(f"Classified label: {class_name} with confidence: {results[0].probs.top1conf.item()}")
+            confidence = results[0].probs.top1conf.item()
         return id, class_name, confidence

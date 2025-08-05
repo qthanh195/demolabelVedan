@@ -54,7 +54,7 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
                     if (result.get("confidence") or 0.0) >= thresh:
                         result_ui["pallet_detected"] = f"{chr(65 + idx)}"  # A, B, C...
                         logging.info(f"Đã gán pallet_detected: {result_ui['pallet_detected']}")
-                    break
+                        break
         else:
             result_ui["pallet_detected"] = "F"
             logging.info("Không phát hiện pallet hợp lệ, gán pallet_detected là 'F'.")

@@ -52,7 +52,8 @@ def capture_image(req: ImageCaptureRequest):
         "cropped_image": (
             api_handel._image_to_base64(results["label_image"])
             if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
-        )
+        ),
+        "text": "tdc - 20kg",
     })
 
 @app.on_event("startup")

@@ -37,7 +37,8 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
         if result["label_detected"] is None:
             logging.warning("Không phát hiện được nhãn!")
             return result_ui
-
+        result_ui["label_detected"] = result["label_detected"]
+        
         # Xử lý pallet
         if result["label_detected"] in [pallet_info[0] for pallet_info in pallet_infos[:5]]:
             for idx, (name, thresh) in enumerate(pallet_infos[:5]):
@@ -49,26 +50,22 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
                     break
         elif "" in [pallet_info[0] for pallet_info in pallet_infos[:5]]: # Nếu có pallet rỗng lấy vị trí đó
             for idx, (name, thresh) in enumerate(pallet_infos[:5]):
-                if (result.get("confidence") or 0.0) >= thresh:
-                    result_ui["pallet_detected"] = f"{chr(65 + idx)}"
-                    logging.info(f"Đã gán pallet_detected: {result_ui['pallet_detected']}")
+                if name == "":  # Đây là pallet rỗng
+                    if (result.get("confidence") or 0.0) >= thresh:
+                        result_ui["pallet_detected"] = f"{chr(65 + idx)}"  # A, B, C...
+                        logging.info(f"Đã gán pallet_detected: {result_ui['pallet_detected']}")
                     break
         else:
             result_ui["pallet_detected"] = "F"
             logging.info("Không phát hiện pallet hợp lệ, gán pallet_detected là 'F'.")
 
-        result_ui["label_detected"] = result["label_detected"]
+        
         result_ui["label_image"] = result["label_image"]
         result_ui["confidence_detect"] = result["confidence_detect"]
         result_ui["confidence_classify"] = result["confidence_classify"]
         result_ui["confidence_ocr"] = result["confidence_ocr"]
         result_ui["confidence"] = result["confidence"]
 
-        logging.info(f"Label phát hiện: {result_ui['label_detected']}, "
-                     f"Conf_detect: {result_ui['confidence_detect']}, "
-                     f"Conf_classify: {result_ui['confidence_classify']}, "
-                     f"Conf_ocr: {result_ui['confidence_ocr']}, "
-                     f"Conf: {result_ui['confidence']}")
         logging.info(f"Kết quả trả về UI: {result_ui}")
         return result_ui
 
@@ -112,8 +109,8 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
         }
         
         # Chụp ảnh từ camera
-        # image = self.get_image()
-        image = cv2.imread("E:/2. GE/22. Vedan Vision Ocr/Image0505/image30/tdctest2.png")  # Thay thế bằng phương thức lấy ảnh từ camera thực tế
+        image = self.get_image()
+        # image = cv2.imread("E:/2. GE/22. Vedan Vision Ocr/Image0505/image30/tdctest2.png")  # Thay thế bằng phương thức lấy ảnh từ camera thực tế
 
         if image is None or not hasattr(image, "shape"):
             logging.error("Ảnh đầu vào không hợp lệ!")
@@ -132,34 +129,31 @@ class ApiHandler(BaslerCamera, OCR_Engine, AiHander):
         if label_image is None or not isinstance(label_image, np.ndarray) or label_image.size == 0:
             logging.error("Không phát hiện được nhãn hoặc nhãn bị lỗi!")
             return result_label_default
+        result_label_default["confidence_detect"] = confidence_detect
         cv2.rectangle(image, rect_label[0], rect_label[1], (0, 255, 0), thickness=6)
 
         # Chỉ gọi phân loại khi label_image hợp lệ
         id, class_name, confidence_classify = self.classifiLabel(label_image)
         logging.debug(f"Kết quả classifiLabel: id={id}, class_name={class_name}, confidence_classify={confidence_classify}")
-
-        if label_image is None or not isinstance(label_image, np.ndarray) or label_image.size == 0:
-            logging.error("label_image không hợp lệ sau phân loại!")
-            return image, None, None, None, 0.0
-        
-        if id is None or class_name is None:
-            logging.error("Không phát hiện được nhãn hoặc nhãn bị lỗi sau phân loại!")
-            return result_label_default
+        result_label_default["confidence_classify"] = confidence_classify
 
         if id in [22, 40, 38, 26]:  # Các nhãn đặc biệt
-        # Xử lý nhãn đặc biệt nếu có
             class_name, label_image, confidence_ocr = self._handle_special_labels(id, class_name, label_image)
             result_label_default["confidence"] = confidence_ocr
+            result_label_default["confidence_ocr"] = confidence_ocr
             logging.debug(f"Kết quả _handle_special_labels: class_name={class_name}, confidence_ocr={confidence_ocr}")
         else:
             result_label_default["confidence"] = confidence_classify
-
+            label_image = self._rotate_label_image(label_image)
+            
         result_label_default["origin_image"] = image
-        result_label_default["label_image"] = label_image
-        result_label_default["confidence_detect"] = confidence_detect
         result_label_default["label_detected"] = class_name
-        result_label_default["confidence_classify"] = confidence_classify
-        result_label_default["confidence_ocr"] = confidence_ocr
+        result_label_default["label_image"] = label_image
 
-        # logging.info(f"Kết quả trả về từ _get_image_and_classify: {result_label_default}")
         return result_label_default
+
+    def _rotate_label_image(self, label_image: np.ndarray) -> np.ndarray:
+        #kiểm tra kích thước ảnh và luôn cho ảnh nằm ngang
+        if label_image.shape[0] > label_image.shape[1]:
+            label_image = cv2.rotate(label_image, cv2.ROTATE_90_CLOCKWISE)
+        return label_image

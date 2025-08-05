@@ -130,41 +130,41 @@ class OCR_Engine(ProcessImage, AiHander):
                             
                             match (idx_text1, idx_text2):
                                 case (0, 0):  # "20kg", "でん粉「TW-100」"
-                                    return "Label30", image_crop, confidence_ocr
+                                    return "Label-30", image_crop, confidence_ocr
                                 case (3, 1):  # "18kg", "食品用タピオカでん粉「BK-V」"
-                                    return "Label49", image_crop, confidence_ocr
+                                    return "Label-49", image_crop, confidence_ocr
                                 case (0, 1):  # "20kg", "食品用タピオカでん粉「BK-V」"
-                                    return "Label50", image_crop, confidence_ocr
+                                    return "Label-50", image_crop, confidence_ocr
                                 case (1, 2):  # "25kg", "食品用タピオカでん粉「BK-V3」"
-                                    return "Label51", image_crop, confidence_ocr
+                                    return "Label-51", image_crop, confidence_ocr
                                 case (1, 3):  # "25kg", "イモのちから"
-                                    return "Label52", image_crop, confidence_ocr
+                                    return "Label-52", image_crop, confidence_ocr
                                 case (0, 4):  # "20kg", "食品用タピオカでん粉「ES-5」"
-                                    return "Label53", image_crop, confidence_ocr
+                                    return "Label-53", image_crop, confidence_ocr
                                 case (1, 5):  # "25kg", "食品用タピオカでん粉「SK-08」"
-                                    return "Label54", image_crop, confidence_ocr
+                                    return "Label-54", image_crop, confidence_ocr
                                 case (1, 6):  # "25kg", "食品用タピオカでん粉「タピオカV3」"
-                                    return "Label55", image_crop, confidence_ocr
+                                    return "Label-55", image_crop, confidence_ocr
                                 case (2, 7):  # "12.5kg", "食品用タピオカでん粉「タピオカV」"
-                                    return "Label56", image_crop, confidence_ocr
+                                    return "Label-56", image_crop, confidence_ocr
                                 case (0, 8):  # "20kg", "食品用タピオカでん粉「FM-5」"
-                                    return "Label57", image_crop, confidence_ocr
+                                    return "Label-57", image_crop, confidence_ocr
                                 case (0, 7):  # "20kg", "食品用タピocaでん粉「タピオカV」"
-                                    return "Label58", image_crop, confidence_ocr
+                                    return "Label-58", image_crop, confidence_ocr
                                 case (0, 9):  # "20kg", "食品用タピオカでん粉「RT-90」"
-                                    return "Label59", image_crop, confidence_ocr
+                                    return "Label-59", image_crop, confidence_ocr
                                 case (1, 7):  # "25kg", "食品用タピオカでん粉「タピオカV」"
-                                    return "Label60", image_crop, confidence_ocr
+                                    return "Label-60", image_crop, confidence_ocr
                                 case (1, 1):  # "25kg", "食品用タピオカでん粉「BK-V」"
-                                    return "Label61", image_crop, confidence_ocr
+                                    return "Label-61", image_crop, confidence_ocr
                                 case (1, 10): # "25kg", "食品用タピオカでん粉「タピオカV2」"
-                                    return "Label62", image_crop, confidence_ocr
+                                    return "Label-62", image_crop, confidence_ocr
                                 case (1, 11): # "25kg", "食品用タピオカでん粉「BK-V7」"
-                                    return "Label63", image_crop, confidence_ocr
+                                    return "Label-63", image_crop, confidence_ocr
                                 case _:
-                                    return "", image_crop, confidence_ocr
-        return "", new_img, confidence_ocr
-    
+                                    return "Group-0 (TDC)", image_crop, confidence_ocr
+        return "Group-0 (TDC)", new_img, confidence_ocr
+
     def classify_label_logo_recycling(self, image):
         """"
             1. Phát hien logo recycling
@@ -242,26 +242,26 @@ class OCR_Engine(ProcessImage, AiHander):
                             print("text:", text)
                             match idx_text:
                                 case 3:
-                                    return "Label64", image_crop, confidence_ocr
+                                    return "Label-64", image_crop, confidence_ocr
                                 case 7:
-                                    return "Label65", image_crop, confidence_ocr
+                                    return "Label-65", image_crop, confidence_ocr
                                 case 5:
-                                    return "Label66", image_crop, confidence_ocr
+                                    return "Label-66", image_crop, confidence_ocr
                                 case 4:
-                                    return "Label67", image_crop, confidence_ocr
+                                    return "Label-67", image_crop, confidence_ocr
                                 case 1:
-                                    return "Label68", image_crop, confidence_ocr
+                                    return "Label-68", image_crop, confidence_ocr
                                 case 6:
-                                    return "Label69", image_crop, confidence_ocr
+                                    return "Label-69", image_crop, confidence_ocr
                                 case 8:
-                                    return "Label70", image_crop, confidence_ocr
+                                    return "Label-70", image_crop, confidence_ocr
                                 case 2:
-                                    return "Label71", image_crop, confidence_ocr
+                                    return "Label-71", image_crop, confidence_ocr
                                 case 0:
-                                    return "Label72", image_crop, confidence_ocr
+                                    return "Label-72", image_crop, confidence_ocr
 
-        return "", new_img, confidence_ocr
-    
+        return "Group-1", new_img, confidence_ocr
+
     def classify_label_logo_halal(self, image):
         """"
             1. Phát hien logo halal
@@ -332,18 +332,18 @@ class OCR_Engine(ProcessImage, AiHander):
                     
                     match idx_text:
                         case 0:  # AL-69 (E1412) (FOOD GRADE)
-                            return "Label73", image_crop, confidence_ocr
+                            return "Label-73", image_crop, confidence_ocr
                         case 1:  # AL-43F (E1450) (FOOD GRADE)
-                            return "Label74", image_crop, confidence_ocr
+                            return "Label-74", image_crop, confidence_ocr
                         case 2:  # AL-58 (E1422) (FOOD GRADE)
-                            return "Label75", image_crop, confidence_ocr
+                            return "Label-75", image_crop, confidence_ocr
                         case 3:  # AL-94 (FOOD GRADE)
-                            return "Label45", image_crop, confidence_ocr
+                            return "Label-45", image_crop, confidence_ocr
                         case _:
-                            return "", image_crop, confidence_ocr
+                            return "Group-2", image_crop, confidence_ocr
 
-        return "", new_img, confidence_ocr
-    
+        return "Group-2", new_img, confidence_ocr
+
     def classify_label_logo_unu(self, image):
         """"
             1. Phát hien logo unu
@@ -416,12 +416,12 @@ class OCR_Engine(ProcessImage, AiHander):
                     
                     match idx_text:
                         case 0:  # "サナス514"
-                            return "Label34", image_crop, confidence_ocr
+                            return "Label-34", image_crop, confidence_ocr
                         case 1:  # "サナス510"
-                            return "Label76", image_crop, confidence_ocr
+                            return "Label-76", image_crop, confidence_ocr
                         case 2:  # "サナスTS01V"
-                            return "Label77", image_crop, confidence_ocr
+                            return "Label-77", image_crop, confidence_ocr
                         case _:
-                            return "", image_crop, confidence_ocr
+                            return "Group-3", image_crop, confidence_ocr
 
-        return "", new_img, confidence_ocr
+        return "Group-3", new_img, confidence_ocr

@@ -66,24 +66,33 @@
 
 # sv.plot_image(image=annotated_frame)
 
-import ollama
-# print(ollama.list())
-import cv2
-import base64
-import os
+# import ollama
+# # print(ollama.list())
+# import cv2
+# import base64
+# import os
 
-os.environ["OLLAMA_USE_GPU"] = "0"
-image2 = cv2.imread("E:/2. GE/26. Adidas\code\check_sole_primer_demo\Detected_Sole.jpg")
-image1 = cv2.imread("E:/2. GE/26. Adidas\code\check_sole_primer_demo\Detected_Sole3.jpg")
-_, buffer1 = cv2.imencode('.jpg', image1)
-img_base641 = base64.b64encode(buffer1).decode('utf-8')
-_, buffer2 = cv2.imencode('.jpg', image2)
-img_base642 = base64.b64encode(buffer2).decode('utf-8')
-response = ollama.generate(
-        model = "qwen2.5vl:7b",
-        prompt = '2 ảnh này là cùng một đế giày được quét keo và phản chiếu bởi đèn uv nhưng chụp ở những vị trí khác nhau làm hiệu ứng ánh sáng khác nhau, làm sao để xác định vùng có keo trên đế giày',
-        images = [img_base641, img_base642],
-        # format = "json"
-    )
-print("Kết quả OCR:")
-print(response)
+# os.environ["OLLAMA_USE_GPU"] = "0"
+# image2 = cv2.imread("E:/2. GE/26. Adidas\code\check_sole_primer_demo\Detected_Sole.jpg")
+# image1 = cv2.imread("E:/2. GE/26. Adidas\code\check_sole_primer_demo\Detected_Sole3.jpg")
+# _, buffer1 = cv2.imencode('.jpg', image1)
+# img_base641 = base64.b64encode(buffer1).decode('utf-8')
+# _, buffer2 = cv2.imencode('.jpg', image2)
+# img_base642 = base64.b64encode(buffer2).decode('utf-8')
+# response = ollama.generate(
+#         model = "qwen2.5vl:7b",
+#         prompt = '2 ảnh này là cùng một đế giày được quét keo và phản chiếu bởi đèn uv nhưng chụp ở những vị trí khác nhau làm hiệu ứng ánh sáng khác nhau, làm sao để xác định vùng có keo trên đế giày',
+#         images = [img_base641, img_base642],
+#         # format = "json"
+#     )
+# print("Kết quả OCR:")
+# print(response)
+
+
+
+def test():
+    from src.function.yolo import AiHander
+    import cv2
+
+    label_image, _, _ = AiHander().detectLabel(cv2.imread("E:/2. GE/22. Vedan Vision Ocr\Image0505\image36\img_20250506_180654.png"))
+    cv2.imwrite("testlabel.jpg", label_image)

@@ -84,7 +84,7 @@ class ApiHandler(BaslerCamera, ProcessImage):
         
         # Chụp ảnh từ camera
         # image = self.get_image()
-        image = cv2.imread("E:/2. GE/22. Vedan Vision Ocr\Image0505\image36\img_20250506_180654.png")  # Thay thế bằng phương thức lấy ảnh từ camera thực tế
+        image = cv2.imread("E:/2. GE/22. Vedan Vision Ocr\Image0505\image30\img_20250506_165240.png")  # Thay thế bằng phương thức lấy ảnh từ camera thực tế
 
         if image is None or not hasattr(image, "shape"):
             logging.error("Ảnh đầu vào không hợp lệ!")
@@ -120,7 +120,6 @@ class ApiHandler(BaslerCamera, ProcessImage):
             logging.debug(f"Kết quả handle_special_labels: class_name={class_name}, confidence_ocr={confidence_ocr}")
         elif id is not None:
             result_label_default["confidence"] = confidence_classify
-            label_image = self.rotate_label_image(label_image)
 
             match id:
                 case 28:  # Label-28

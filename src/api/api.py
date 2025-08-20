@@ -6,10 +6,6 @@ from src.api.schemas.image_schemas import ImageCaptureRequest
 from src.handler.api_handler import ApiHandler
 import uvicorn
 
-# import random
-# import cv2
-# import base64
-
 api_handel = ApiHandler()
 app = FastAPI()
 
@@ -34,7 +30,6 @@ def capture_image(req: ImageCaptureRequest):
             (req.thresh_area)
         ]
     print(pallet_infos)
-    # results = api_handel.analyze_image(pallet_infos)
     results = api_handel.process(pallet_infos)
 
     return JSONResponse(content={

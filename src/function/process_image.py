@@ -20,15 +20,15 @@ class ProcessImage(OCR_Engine):
         class_name, label_image, confidence_ocr, text, weight = class_name, label_image, 0, "", ""
         match id:
             case 22:  # tdc
-                class_name, label_image, confidence_ocr, text, weight = self.classifi_tdc_with_ocr(label_image)
+                class_name, confidence_ocr, text, weight = self.classifi_tdc_with_ocr(label_image)
             case 40:  # recycling
                 start_time = time.time()
-                class_name, label_image, confidence_ocr, text, weight = self.classify_label_logo_recycling(label_image)
+                class_name, confidence_ocr, text, weight = self.classify_label_logo_recycling(label_image)
                 print(f"Thời gian chạy: {time.time() - start_time:.4f} giây")
             case 38:  # halal
-                class_name, label_image, confidence_ocr, text, weight = self.classify_label_logo_halal(label_image)
+                class_name, confidence_ocr, text, weight = self.classify_label_logo_halal(label_image)
             case 26:  # unu
-                class_name, label_image, confidence_ocr, text, weight = self.classify_label_logo_unu(label_image)
+                class_name, confidence_ocr, text, weight = self.classify_label_logo_unu(label_image)
         logging.debug(f"Kết quả nhãn đặc biệt: class_name={class_name}, confidence_ocr={confidence_ocr}")
         return class_name, label_image, confidence_ocr, text, weight
     

@@ -4,6 +4,7 @@ import base64
 import logging
 import time
 from src.function.ocr import OCR_Engine
+import os
 
 class ProcessImage(OCR_Engine):
     def __init__(self):
@@ -31,5 +32,3 @@ class ProcessImage(OCR_Engine):
         logging.debug(f"Kết quả nhãn đặc biệt: class_name={class_name}, confidence_ocr={confidence_ocr}")
         return class_name, label_image, confidence_ocr, text, weight
     
-    def compare_label_areas(self, image, image_name):
-        pass

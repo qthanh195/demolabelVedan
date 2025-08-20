@@ -257,7 +257,12 @@ class OCR_Engine(AiHander):
                         for box in boxes:
                             x1, y1, x2, y2 = map(int, box.xyxy[0])
                             zone_text = image_crop[y1+120:y1+305, x1-780:x1+80]
+                            cv2.imwrite("zone_text.jpg", zone_text)
+                            text = None
                             text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 6 -l vie')
+                            if text is None:
+                                print("Khong co TEXT")
+                                return "Group-01", new_img, confidence_ocr, "", weight
                             text = text.replace("\n", "")
                             # text = text.replace(" ", "")
                             idx_text, confidence_ocr = self.get_best_match(text, valid_label_recyling)

@@ -3,14 +3,14 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from src.api.schemas.image_schemas import ImageCaptureRequest
-# from src.handler.api_handler import ApiHandler
+from src.handler.api_handler import ApiHandler
 import uvicorn
 
-import random
-import cv2
-import base64
+# import random
+# import cv2
+# import base64
 
-# api_handel = ApiHandler()
+api_handel = ApiHandler()
 app = FastAPI()
 
 # THÊM middleware CORS
@@ -33,44 +33,29 @@ def capture_image(req: ImageCaptureRequest):
             (req.name_f, req.thresh_f_object, req.thresh_f_group, req.thresh_f_ocr),
             (req.thresh_area)
         ]
-    def image_to_base64(image_np: np.ndarray) -> str:
-        _, buffer = cv2.imencode('.jpg', image_np)
-        img_base64 = base64.b64encode(buffer).decode('utf-8')
-        return img_base64
+    print(pallet_infos)
     # results = api_handel.analyze_image(pallet_infos)
+    results = api_handel.process(pallet_infos)
+
     return JSONResponse(content={
-        "label_detected": f"Label-{random.randint(1, 78)}",
-        "pallet_detect": f"{random.choice["A", "B", "C", "D", "E", "F"]}",
-        "confidence_detect": f"{random.random():.2f}",
-        "confidence_classify": f"{random.random():.2f}",
-        "confidence_ocr": f"{random.random():.2f}",
-        "origin_image": image_to_base64(cv2.imread("E:/2. GE/22. Vedan Vision Ocr\Image0505\image30\img_20250506_165238.png")),
-        "cropped_image": image_to_base64(cv2.imread("data\Label-62.jpg")),
-        "text": "Ahihiiiiiiiiiiiiiii",
-        "weight": "20kg",
-        "%_area": "98",
+        "label_detected": (results["label_detected"] if results["label_detected"] else "None"),
+        "pallet_detect": (results["pallet_detected"] if results["pallet_detected"] else "F"),
+        # "pallet_detect": "C",
+        "confidence_detect": f"{(results['confidence_detect'] or 0):.2f}",
+        "confidence_classify": f"{(results['confidence_classify'] or 0):.2f}",
+        "confidence_ocr": f"{(results['confidence_ocr'] or 0):.2f}",
+        "origin_image": (
+            api_handel.image_to_base64(results["origin_image"])
+            if results["origin_image"] is not None and isinstance(results["origin_image"], np.ndarray) and results["origin_image"].size > 0 else ""
+        ),
+        "cropped_image": (
+            api_handel.image_to_base64(results["label_image"])
+            if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
+        ),
+        "text": (results["text"] if results["text"] else ""),
+        "weight": (results["weight"] if results["weight"] else "None"),
+        "percent_area": f"{(results["%_area"]or 0):.2f}",
     })
-
-
-    # return JSONResponse(content={
-    #     "label_detected": (results["label_detected"] if results["label_detected"] else "None"),
-    #     "pallet_detect": (results["pallet_detected"] if results["pallet_detected"] else "F"),
-    #     # "pallet_detect": "C",
-    #     "confidence_detect": f"{(results['confidence_detect'] or 0):.2f}",
-    #     "confidence_classify": f"{(results['confidence_classify'] or 0):.2f}",
-    #     "confidence_ocr": f"{(results['confidence_ocr'] or 0):.2f}",
-    #     "confidence": f"{(results['confidence'] or 0):.2f}",
-    #     "origin_image": (
-    #         api_handel.image_to_base64(results["origin_image"])
-    #         if results["origin_image"] is not None and isinstance(results["origin_image"], np.ndarray) and results["origin_image"].size > 0 else ""
-    #     ),
-    #     "cropped_image": (
-    #         api_handel.image_to_base64(results["label_image"])
-    #         if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
-    #     ),
-    #     "text": (results["text"] if results["text"] else ""),
-    #     "weight": (results["weight"] if results["weight"] else ""),
-    # })
 
 # @app.on_event("startup")
 # def startup_event():

@@ -65,7 +65,7 @@ class AiHander(ModelYolo):
         
         if not results or results[0].masks is None or len(results[0].masks.xy) == 0:
             print("No Label detected!")
-            return None, None, 0.00
+            return None, None, 0.00, 0
         
         for _, result in enumerate(results):
             for i, seg in enumerate(result.masks.xy):
@@ -73,26 +73,27 @@ class AiHander(ModelYolo):
                 polygon = np.array(seg, dtype=np.int32)
                 x, y, w, h = cv2.boundingRect(polygon)
                 rect_label = ((x, y), (x + w, y + h))
-                image_cop = image.copy()
+                # image_cop = image.copy()
                 
-                crop_image = self.crop_image_with_contour(image_cop, polygon, offset_weight = 20, offset_height = 20)
-                cv2.imwrite("crop_image.jpg", crop_image)
+                crop_image = self.crop_image_with_contour(image, polygon, offset_weight = 20, offset_height = 20)
+                
                 # Tìm contours Áp dụng threshold
                 gray_img = cv2.cvtColor(crop_image, cv2.COLOR_BGR2GRAY)
                 _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                cv2.imwrite("threshold.jpg", thresh)
+                thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=2)
+                # cv2.imwrite("threshold.jpg", thresh)
                 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
                 filtered_contours = [c for c in contours if cv2.contourArea(c) < ((crop_image.shape[0]+10) * (crop_image.shape[1]+10))]
-                print(len(filtered_contours))
 
                 if filtered_contours:
-                    # cv2.drawContours(crop_image, [max(filtered_contours, key=cv2.contourArea)], 0, (0,0,255), 4)
-                    # cv2.imwrite("crop_image.jpg", crop_image)
-                    cv2.imwrite("label1.jpg", self.crop_image_with_contour(crop_image, max(filtered_contours, key=cv2.contourArea)))
-                    return self.rotate_with_ocr(self.crop_image_with_contour(crop_image, max(filtered_contours, key=cv2.contourArea))), rect_label, result.boxes.conf[i].item()
+                    # image_crop_cpo = crop_image.copy()
+                    # cv2.drawContours(image_crop_cpo, [max(filtered_contours, key=cv2.contourArea)], 0, (0,255,0), 3)
+                    # cv2.imwrite("image_crop_cpo.jpg", image_crop_cpo)
+                    cv2.imwrite("label.jpg", self.crop_image_with_contour(crop_image, max(filtered_contours, key=cv2.contourArea)))
+                    return self.rotate_with_ocr(self.crop_image_with_contour(crop_image, max(filtered_contours, key=cv2.contourArea))), rect_label, result.boxes.conf[i].item(), cv2.contourArea(max(filtered_contours, key=cv2.contourArea))
                 
-        return None, None, 0.00
+        return None, None, 0.00, 0
         
     def classifiLabel(self, image):
         if image is None or not isinstance(image, np.ndarray) or image.size == 0:

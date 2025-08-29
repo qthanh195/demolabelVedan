@@ -28,15 +28,16 @@ def save_image_sizes_to_json(input_folder, output_json="image_sizes.json"):
                 # Tìm contours Áp dụng threshold
                 gray_img = cv2.cvtColor(expanded_image_sample, cv2.COLOR_BGR2GRAY)
                 _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=2)
+                thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=4)
                 cv2.imwrite("threshold.jpg", thresh)
                 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 filtered_contours = [c for c in contours if cv2.contourArea(c) < ((img.shape[0]+10) * (img.shape[1]+10))]
                 if filtered_contours:
                     rect = cv2.minAreaRect(max(filtered_contours, key=cv2.contourArea))
-                    
+                    perim_contour = cv2.arcLength(max(filtered_contours, key=cv2.contourArea), True)
+                    area_contour = cv2.contourArea(max(filtered_contours, key=cv2.contourArea))
                     h, w = rect[1][0], rect[1][1]
-                    image_info[filename] = {"width": w, "height": h}
+                    image_info[filename] = {"width": w, "height": h, "area": area_contour, "perimeter": perim_contour}
 
     # lưu kết quả ra file json
     with open(output_json, "w", encoding="utf-8") as f:

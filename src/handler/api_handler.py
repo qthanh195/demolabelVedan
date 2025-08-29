@@ -39,7 +39,7 @@ class ApiHandler(BaslerCamera, ProcessImage):
         # Chụp ảnh từ camera
         image = None
         # image = self.get_image()
-        image = cv2.imread("data\capture/20250820_172828.jpg")
+        image = cv2.imread("data\\capture\\20250826_173139.jpg")
         original_image_height = image.shape[0]
         original_image_width = image.shape[1]
         
@@ -127,7 +127,7 @@ class ApiHandler(BaslerCamera, ProcessImage):
         
         #Kiểm tra tỉ lệ nhãn
         original_width, original_height = self.get_image_size(image_name = f"{class_name}.jpg")
-        label_area, (label_width, label_height) =  area_infos
+        (label_width, label_height) =  area_infos[1]
         if label_image.shape[1] >= label_image.shape[0]:
             label_width, label_height = max(label_width, label_height), min(label_width, label_height)
         else:
@@ -137,17 +137,67 @@ class ApiHandler(BaslerCamera, ProcessImage):
         print(f"original_width = {original_width}, original_height = {original_height}")
         
         per_ratio = abs((label_width/original_width)-(label_height/ original_height))*100
-        # per_ratio = (abs((label_width/original_width)/(label_height/ original_height))-1)*100
-        # per_ratio = (abs(int(original_width) - label_width)/int(original_width) + abs(int(original_height)-label_height)/int(original_height))*100
         
         print("Per_ratio:{}% ", per_ratio)
 
         original_area = self.estimate_original_area((label_width* label_height),(per_ratio))
         print("original_area", original_area)
-        per_area = label_area/original_area*100
+        per_area = area_infos[0]/original_area*100
         
+        
+        # [perimeter (contour)²/area (contour)] / [perimeter (original)²/area (original)]
+
+        image_original = cv2.imread(f"data/SampleData/{class_name}.jpg")
+        border_size = 5
+        expanded_img = cv2.copyMakeBorder(
+            image_original,
+            top=border_size,
+            bottom=border_size,
+            left=border_size,
+            right=border_size,
+            borderType=cv2.BORDER_CONSTANT,
+            value=(0, 0, 0)  # pixel đen
+        )
+        gray_img = cv2.cvtColor(expanded_img, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=4)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) < ((expanded_img.shape[0]+10) * (expanded_img.shape[1]+10))]
+        if filtered_contours:
+            contour_orginal = max(filtered_contours, key=cv2.contourArea)
+            perim_contour = cv2.arcLength(contour_orginal, True)
+            area_contour = cv2.contourArea(contour_orginal)
+            
+        area_label = area_infos[0]
+        perim_label = area_infos[2]
+
+        per_vu = (perim_label ** 2 / area_label) / (perim_contour ** 2 / area_contour) if area_contour != 0 else 0
+        
+        
+        #phương án 2
+        p = (label_width/original_width) - (label_height/ original_height)
+        logging.debug(f"Tỉ lệ: {p}")
+        
+        if p == 0:
+            logging.debug(f"Tỉ lệ bằng 0")
+            result_ui["%_area"] = 100
+        elif p > 0:
+            logging.debug(f"Tỉ lệ dương")
+            h = (label_width*original_height)/original_width - label_height
+            print(f"h: {h}")
+            a_label = label_width * (h+label_height)
+        else:
+            logging.debug(f"Tỉ lệ âm")
+            w = (label_height*original_width)/original_height - label_width
+            print(f"w: {w}")
+            a_label = label_height * (w+label_width)
+        
+        per_new = area_infos[0]/a_label*100
+        logging.debug(f"Tỉ lệ diện tích mới: {per_new}")
+
         result_ui["%_area"] = per_area
         logging.debug(f"Kiểm tra nhãn với giá trị diện tích {per_area} và so với tỉ lệ gốc {per_ratio} trả về kết quả {result_ui['%_area']}")
+        logging.debug(f"Tỉ lệ diện tích: {per_vu}")
         print("Thoi gian Kiem tra kich thuoc: ", time.time()-start_time)
         
         if result_ui["%_area"] < pallet_infos[6]:

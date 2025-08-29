@@ -88,7 +88,7 @@ class AiHander(ModelYolo):
 
                 if filtered_contours:
                     rect = cv2.minAreaRect(max(filtered_contours, key=cv2.contourArea))
-                    area_infos = (cv2.contourArea(max(filtered_contours, key=cv2.contourArea)), (rect[1]))
+                    area_infos = (cv2.contourArea(max(filtered_contours, key=cv2.contourArea)), (rect[1]), cv2.arcLength(max(filtered_contours, key=cv2.contourArea), True))
                     image_crop_cpo = crop_image.copy()
                     cv2.drawContours(image_crop_cpo, [max(filtered_contours, key=cv2.contourArea)], 0, (0,255,0), 3)
                     box = cv2.boxPoints(rect)

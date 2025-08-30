@@ -21,15 +21,16 @@ app.add_middleware(
 @app.post("/image_capture")
 def capture_image(req: ImageCaptureRequest):
     pallet_infos = [
-            (req.name_a, req.thresh_a),
-            (req.name_b, req.thresh_b),
-            (req.name_c, req.thresh_c),
-            (req.name_d, req.thresh_d),
-            (req.name_e, req.thresh_e),
-            (req.name_f, req.thresh_f),
+            (req.name_a, req.thresh_a_object, req.thresh_a_group, req.thresh_a_ocr),
+            (req.name_b, req.thresh_b_object, req.thresh_b_group, req.thresh_b_ocr),
+            (req.name_c, req.thresh_c_object, req.thresh_c_group, req.thresh_c_ocr),
+            (req.name_d, req.thresh_d_object, req.thresh_d_group, req.thresh_d_ocr),
+            (req.name_e, req.thresh_e_object, req.thresh_e_group, req.thresh_e_ocr),
+            (req.name_f, req.thresh_f_object, req.thresh_f_group, req.thresh_f_ocr),
+            (req.thresh_area)
         ]
-    results = api_handel.analyze_image(pallet_infos)
-
+    print(pallet_infos)
+    results = api_handel.process(pallet_infos)
 
     return JSONResponse(content={
         "label_detected": (results["label_detected"] if results["label_detected"] else "None"),
@@ -38,7 +39,6 @@ def capture_image(req: ImageCaptureRequest):
         "confidence_detect": f"{(results['confidence_detect'] or 0):.2f}",
         "confidence_classify": f"{(results['confidence_classify'] or 0):.2f}",
         "confidence_ocr": f"{(results['confidence_ocr'] or 0):.2f}",
-        "confidence": f"{(results['confidence'] or 0):.2f}",
         "origin_image": (
             api_handel.image_to_base64(results["origin_image"])
             if results["origin_image"] is not None and isinstance(results["origin_image"], np.ndarray) and results["origin_image"].size > 0 else ""
@@ -48,18 +48,19 @@ def capture_image(req: ImageCaptureRequest):
             if results["label_image"] is not None and isinstance(results["label_image"], np.ndarray) and results["label_image"].size > 0 else ""
         ),
         "text": (results["text"] if results["text"] else ""),
-        "weight": (results["weight"] if results["weight"] else ""),
+        "weight": (results["weight"] if results["weight"] else "None"),
+        "percent_area": f"{(results["%_area"]or 0):.2f}",
     })
 
-# @app.on_event("startup")
-# def startup_event():
-#     print("Khởi động server và mở camera...")
-#     api_handel.api_open_camera()
+@app.on_event("startup")
+def startup_event():
+    print("Khởi động server và mở camera...")
+    api_handel.api_open_camera()
 
-# @app.on_event("shutdown")
-# def shutdown_event():
-#     print("Đang tắt server và đóng camera...")
-#     api_handel.close_camera()
+@app.on_event("shutdown")
+def shutdown_event():
+    print("Đang tắt server và đóng camera...")
+    api_handel.close_camera()
 
 def run_server():
     uvicorn.run(

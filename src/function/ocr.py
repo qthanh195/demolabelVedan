@@ -75,6 +75,10 @@ class OCR_Engine(AiHander):
             boxes = result.boxes
             for box in boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0]) 
+                print(f"box: w= {x2 - x1}, h= {y2 - y1}")
+                image_box = image.copy()
+                cv2.rectangle(image_box, (x1, y1), (x2, y2), (0,255,0), thickness= 3)
+                cv2.imwrite("image_box.jpg", image_box)
                 # Chuyển sang ảnh xám
                 if len(image.shape) == 3:
                     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -83,7 +87,10 @@ class OCR_Engine(AiHander):
                 # Tiền xử lý theo đoạn code của bạn
                 gray = cv2.medianBlur(gray, 3)
                 image_crop1 = gray[y1-4:y2+4, x1:x2]
-                image_crop2 = gray[y1-int((98)*height/2748):y2-int((80)*height/2748), x1-int((5)*width/3840):x2+int((400)*width/3840)]
+                image_crop2 = gray[y1-int((98)*(y2 - y1)/27):y2-int((80)*(y2 - y1)/27), x1-int((5)*(x2 - x1)/80):x2+int((400)*(x2 - x1)/80)]
+                if image_crop1 is None or image_crop1.size == 0 or image_crop2 is None or image_crop2.size == 0:
+                    print("image_crop1 hoặc image_crop2 không hợp lệ:", type(image_crop1), getattr(image_crop1, "shape", None), type(image_crop2), getattr(image_crop2, "shape", None))
+                    return "Group-04 (TDC)", confidence_ocr, text_returned, weight
                 # image_crop1 = cv2.threshold(image_crop1, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
                 # image_crop2 = cv2.threshold(image_crop2, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
                 cv2.imwrite("image_crop1.jpg", image_crop1)
@@ -156,9 +163,19 @@ class OCR_Engine(AiHander):
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                x1, y1, _, _ = map(int, box.xyxy[0])
-                zone_text = image[y1+int(115*height/2748):y1+int(305*height/2748), x1-int(780*width/3840):x1+int(80*width/3840)]
+                x1, y1,  x2, y2 = map(int, box.xyxy[0])
+                print(f"box: w= {x2 - x1}, h= {y2 - y1}")
+                image_box = image.copy()
+                cv2.rectangle(image_box, (x1, y1), (x2, y2), (0,255,0), thickness= 3)
+                cv2.imwrite("image_box.jpg", image_box)
+                # box: 1062 90 1179 197
+                # box: 915 69 1020 165
+                # box: 66 856 169 954
+                zone_text = image[y1+int(115*(y2 - y1)/96):y1+int(305*(y2 - y1)/96), x1-int(780*(x2 - x1)/104):x1+int(80*(x2 - x1)/104)]
                 # zone_text = image[194:379, int(image.shape[1]/2-430):int(image.shape[1]/2+430)]
+                if zone_text is None or not isinstance(zone_text, np.ndarray) or zone_text.size == 0:
+                    print("zone_text không hợp lệ:", type(zone_text), getattr(zone_text, "shape", None))
+                    return "Group-01", 0, "", ""
                 cv2.imwrite("zone_text.jpg", zone_text)
                 
                 text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 6 -l vie')
@@ -195,6 +212,9 @@ class OCR_Engine(AiHander):
 
         # zone_text = image[235:330, 60:650]
         zone_text = image[int(235*height/2748):int(330*height/2748), int(60*width/3840):int(650*width/3840)]
+        if zone_text is None or not isinstance(zone_text, np.ndarray) or zone_text.size == 0:
+            print("zone_text không hợp lệ:", type(zone_text), getattr(zone_text, "shape", None))
+            return "Group-02", confidence_ocr, "", weight
         cv2.imwrite("zone_text.jpg", zone_text)
         
         text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
@@ -218,6 +238,9 @@ class OCR_Engine(AiHander):
         weight = ""
         # zone_text = image[160:350, 800:1300]
         zone_text = image[int(160*height/2748):int(350*height/2748), int(800*width/3840):int(1300*width/3840)]
+        if zone_text is None or not isinstance(zone_text, np.ndarray) or zone_text.size == 0:
+            print("zone_text không hợp lệ:", type(zone_text), getattr(zone_text, "shape", None))
+            return "Group-03", confidence_ocr, "", weight
         cv2.imwrite("zone_text.jpg", zone_text)
         text = pytesseract.image_to_string(zone_text, config=r'--oem 3 --psm 7 -l eng')
         text = f"サナス{text}"

@@ -45,8 +45,10 @@ class ProcessImage(OCR_Engine):
         # Tìm theo tên ảnh
         if image_name in image_info:
             size = image_info[image_name]
-            width, height = size["width"], size["height"]
-            return width, height
+            width, height, area, perimeter = size["width"], size["height"], size["area"], size["perimeter"]
+            # print(f"✅ Tìm thấy kích thước của {image_name}: width={size['width']}, height={size['height']}, area={size['area']}, perimeter={size['perimeter']}")
+            # print(f"✅ Tìm thấy kích thước của {image_name}: width={width}, height={height}, area={area}, perimeter={perimeter}")
+            return width, height, area, perimeter
         else:
             print(f"❌ Không tìm thấy {image_name} trong {json_file}")
             return None

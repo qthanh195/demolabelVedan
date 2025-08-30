@@ -52,15 +52,15 @@ def capture_image(req: ImageCaptureRequest):
         "percent_area": f"{(results["%_area"]or 0):.2f}",
     })
 
-# @app.on_event("startup")
-# def startup_event():
-#     print("Khởi động server và mở camera...")
-#     api_handel.api_open_camera()
+@app.on_event("startup")
+def startup_event():
+    print("Khởi động server và mở camera...")
+    api_handel.api_open_camera()
 
-# @app.on_event("shutdown")
-# def shutdown_event():
-#     print("Đang tắt server và đóng camera...")
-#     api_handel.close_camera()
+@app.on_event("shutdown")
+def shutdown_event():
+    print("Đang tắt server và đóng camera...")
+    api_handel.close_camera()
 
 def run_server():
     uvicorn.run(

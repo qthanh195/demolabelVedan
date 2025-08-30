@@ -79,7 +79,8 @@ class AiHander(ModelYolo):
                 # crop_image = self.rotate_with_ocr(crop_image)
                 # Tìm contours Áp dụng threshold
                 gray_img = cv2.cvtColor(crop_image, cv2.COLOR_BGR2GRAY)
-                _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                a, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                print("gia tri threshold: ", a)
                 thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=4)
                 cv2.imwrite("threshold.jpg", thresh)
                 contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

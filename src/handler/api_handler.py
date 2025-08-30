@@ -6,8 +6,8 @@ from logs.log import logging
 import datetime
 import time
 
-class ApiHandler(BaslerCamera, ProcessImage):
-# class ApiHandler(CameraWebcam, ProcessImage):
+# class ApiHandler(BaslerCamera, ProcessImage):
+class ApiHandler(CameraWebcam, ProcessImage):
     def __init__(self):
         super().__init__()
     
@@ -38,8 +38,8 @@ class ApiHandler(BaslerCamera, ProcessImage):
         
         # Chụp ảnh từ camera
         image = None
-        # image = self.get_image()
-        image = cv2.imread("data\\capture\\20250826_173139.jpg")
+        image = self.get_image()
+        # image = cv2.imread("data\\capture\\20250826_155646.jpg")
         original_image_height = image.shape[0]
         original_image_width = image.shape[1]
         
@@ -67,7 +67,7 @@ class ApiHandler(BaslerCamera, ProcessImage):
             
         
         # Phát hiện nhãn
-        label_image, rect_label, confidence_detect, area_infos = self.detectLabel(image)
+        label_image, rect_label, confidence_detect, label_infos = self.detectLabel(image)
         logging.debug(f"Kết quả detectLabel: label_image is None? {label_image is None}, "
                       f"rect_label: {rect_label}, confidence_detect: {confidence_detect}")
         print("Thoi gian detect: ", time.time()-start_time)
@@ -126,57 +126,28 @@ class ApiHandler(BaslerCamera, ProcessImage):
         print("class name: ", class_name)
         
         #Kiểm tra tỉ lệ nhãn
-        original_width, original_height = self.get_image_size(image_name = f"{class_name}.jpg")
-        (label_width, label_height) =  area_infos[1]
+
+        (label_width, label_height) =  label_infos[1]
         if label_image.shape[1] >= label_image.shape[0]:
             label_width, label_height = max(label_width, label_height), min(label_width, label_height)
         else:
             label_width, label_height = min(label_width, label_height), max(label_width, label_height)
-        
-        print(f"label_width = {label_width}, label_height = {label_height}")
-        print(f"original_width = {original_width}, original_height = {original_height}")
-        
-        per_ratio = abs((label_width/original_width)-(label_height/ original_height))*100
-        
-        print("Per_ratio:{}% ", per_ratio)
+        logging.debug(f"Kích thước nhãn phát hiện được: width={label_width}, height={label_height}, perimeter={label_infos[2]}, area={label_infos[0]}   ")
 
-        original_area = self.estimate_original_area((label_width* label_height),(per_ratio))
-        print("original_area", original_area)
-        per_area = area_infos[0]/original_area*100
-        
-        
-        # [perimeter (contour)²/area (contour)] / [perimeter (original)²/area (original)]
+        original_size = self.get_image_size(image_name = f"{class_name}.jpg")
+        if original_size is None:
+            logging.debug(f"Không tìm thấy kích thước gốc cho {class_name}.jpg")
+            return result_ui
 
-        image_original = cv2.imread(f"data/SampleData/{class_name}.jpg")
-        border_size = 5
-        expanded_img = cv2.copyMakeBorder(
-            image_original,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
-            borderType=cv2.BORDER_CONSTANT,
-            value=(0, 0, 0)  # pixel đen
-        )
-        gray_img = cv2.cvtColor(expanded_img, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3),np.uint8), iterations=4)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) < ((expanded_img.shape[0]+10) * (expanded_img.shape[1]+10))]
-        if filtered_contours:
-            contour_orginal = max(filtered_contours, key=cv2.contourArea)
-            perim_contour = cv2.arcLength(contour_orginal, True)
-            area_contour = cv2.contourArea(contour_orginal)
-            
-        area_label = area_infos[0]
-        perim_label = area_infos[2]
+        original_width, original_height, original_area, original_perimeter = original_size
+        logging.debug(f"Kích thước gốc của {class_name}.jpg: width={original_width}, height={original_height}, perimeter={original_perimeter}, area={original_area}")
+        
+        
+        #Tính độ biến dạng của nhãn so với nhãn gốc
+        distortion = (label_infos[2] ** 2 / label_infos[0]) / (original_perimeter ** 2 / original_area) if original_area != 0 else 0
 
-        per_vu = (perim_label ** 2 / area_label) / (perim_contour ** 2 / area_contour) if area_contour != 0 else 0
-        
-        
-        #phương án 2
         p = (label_width/original_width) - (label_height/ original_height)
-        logging.debug(f"Tỉ lệ: {p}")
+        logging.debug(f"Tỉ lệ P: {p}")
         
         if p == 0:
             logging.debug(f"Tỉ lệ bằng 0")
@@ -192,12 +163,12 @@ class ApiHandler(BaslerCamera, ProcessImage):
             print(f"w: {w}")
             a_label = label_height * (w+label_width)
         
-        per_new = area_infos[0]/a_label*100
-        logging.debug(f"Tỉ lệ diện tích mới: {per_new}")
+        # per_area = label_infos[0]/a_label*100# + (distortion-1)*100
+        per_area = label_infos[0]/a_label*100 + (1 - distortion)*100
 
-        result_ui["%_area"] = per_area
-        logging.debug(f"Kiểm tra nhãn với giá trị diện tích {per_area} và so với tỉ lệ gốc {per_ratio} trả về kết quả {result_ui['%_area']}")
-        logging.debug(f"Tỉ lệ diện tích: {per_vu}")
+        result_ui["%_area"] = per_area if per_area < 100 else 100
+        logging.debug(f"Kiểm tra nhãn với giá trị diện tích {label_infos[0]/a_label*100}% độ biến dạng so với nhãn gốc {(distortion-1)*100} trả về kết quả {result_ui['%_area']}")
+
         print("Thoi gian Kiem tra kich thuoc: ", time.time()-start_time)
         
         if result_ui["%_area"] < pallet_infos[6]:

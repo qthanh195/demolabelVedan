@@ -151,7 +151,7 @@ class BaslerCamera():
         return image_cop
             
 class CameraWebcam:
-    def __init__(self, cam_index=1):
+    def __init__(self, cam_index=2):
         super().__init__()
         self.cam_index = cam_index
         self.camera = None

@@ -68,72 +68,9 @@ class ProcessImage(OCR_Engine):
 
         original_area = area_new / (1 - lost_percent / 100)
         return original_area
-
-    # def evaluate_label(original_size, contour):
-    #     """
-    #     Đánh giá % nhãn còn lại so với nhãn gốc dựa trên contour tìm được.
-
-    #     Args:
-    #         original_size (tuple): (original_width, original_height) kích thước nhãn gốc
-    #         contour (ndarray): contour tìm được từ cv2.findContours
-
-    #     Returns:
-    #         float: phần trăm diện tích nhãn còn lại (%)
-    #     """
-    #     original_width, original_height = original_size
-
-    #     # diện tích thực tế của contour
-    #     rect = cv2.minAreaRect(contour)
-    #     w, h = rect[1]
-
-    #     #sort
-    #     if 
-
-    #     # tỉ lệ dài/rộng gốc và mới
-    #     orig_ratio = original_width / original_height
-    #     new_ratio = w / h if h != 0 else 1e-6
-
-    #     # độ méo hình (%)
-    #     shape_ratio = abs(new_ratio / orig_ratio - 1) * 100
-
-    #     # ước lượng diện tích gốc dựa trên bounding rect + hiệu chỉnh méo hình
-    #     est_original_area = w * h * (1 + shape_ratio / 100)
-
-    #     # % nhãn còn lại
-    #     percent_remain = (label_area / est_original_area) * 100
-
-    #     return percent_remain
-
-    
-    def full_ocr(self, image):
-        pass
-    
-    def read_netweight(self, image):
-        weight = ""
-        results = self.model_detect_khoiluong_tdc.predict(source=image)
-        if results is None or len(results) == 0 or results[0].boxes is None:
-            return False, None
-        for result in results:
-            boxes = result.boxes
-            for box in boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-
-                image_crop = image[y1-4:y2+4, x1:x2]
-                weight = pytesseract.image_to_string(image_crop, config=r'--oem 3 --psm 8 -l eng')
-                
-                if weight != "":
-                    return weight
-        return weight  
     
 class SmartOCR:
     def __init__(self, tesseract_path=None, max_workers=4):
-        """
-        Khởi tạo SmartOCR
-        
-        Args:
-            tesseract_path: Đường dẫn đến tesseract executable (Windows)
-            max_workers: Số luồng xử lý song song
-        """
         if tesseract_path:
             pytesseract.pytesseract.tesseract_cmd = tesseract_path
         

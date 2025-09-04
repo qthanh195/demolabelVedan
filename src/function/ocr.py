@@ -117,7 +117,8 @@ class OCR_Engine(AiHander):
                 if confidence_text2 is None:
                     confidence_text2 = 0.00
                 confidence_ocr = (confidence_text1 + confidence_text2) / 2
-                
+                cv2.rectangle(image, (x1, y1-4), (x2, y2+4), (0,255,0), thickness= 3)
+                cv2.rectangle(image, (x1-int((5)*(x2 - x1)/80), y1-int((98)*(y2 - y1)/27)), (x2+int((400)*(x2 - x1)/80),y2-int((80)*(y2 - y1)/27)), (0,255,0), thickness= 3)
                 match (idx_text1, idx_text2):
                     case (0, 0):  # "20kg", "でん粉「TW-100」"
                         return "Label-30",  confidence_ocr, text_returned, weight
@@ -183,6 +184,7 @@ class OCR_Engine(AiHander):
                 
                 idx_text, confidence_ocr = self.get_best_match(text, valid_label_recyling)
                 print("text:", text)
+                cv2.rectangle(image, (x1-int(780*(x2 - x1)/104), y1+int(115*(y2 - y1)/96)), (x1+int(80*(x2 - x1)/104), y1+int(305*(y2 - y1)/96)), (0,255,0), thickness= 3)
                 match idx_text:
                     case 3:
                         return "Label-64", confidence_ocr, text, weight

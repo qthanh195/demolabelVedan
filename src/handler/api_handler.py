@@ -7,7 +7,7 @@ import datetime
 import time
 
 # class ApiHandler(BaslerCamera, ProcessImage):
-class ApiHandler(CameraWebcam, ProcessImage):
+class ApiHandler(CameraWebcam, ProcessImage): 
     def __init__(self):
         super().__init__()
     
@@ -58,8 +58,7 @@ class ApiHandler(CameraWebcam, ProcessImage):
         
         #Gán ảnh result nếu có ảnh và lưu ảnh
         result_ui["origin_image"] = image
-        # cv2.imwrite(f"data\capture/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg", image)
-        
+        cv2.imwrite(f"data\capture/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg", image)
         
         # Đảm bảo ảnh là BGR
         if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):

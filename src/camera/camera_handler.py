@@ -1,6 +1,10 @@
 from pypylon import pylon
 import numpy as np
 import cv2
+import time
+from collections import deque
+import threading
+
   
 class BaslerCamera():
     def __init__(self):
@@ -151,61 +155,124 @@ class BaslerCamera():
         return image_cop
             
 class CameraWebcam:
-    def __init__(self, cam_index=2):
+    def __init__(self, cam_index=0):
         super().__init__()
         self.cam_index = cam_index
         self.camera = None
         self.is_open = False
 
+        # ===== Added for anti-stale-frame =====
+        self._capture_thread = None
+        self._stop_event = threading.Event()
+        self._frame_lock = threading.Lock()
+        self._latest_frame = None
+        self._latest_ts = 0.0
+        self._warmup_frames = 8  # số frame bỏ sau khi mở
+
     def open_camera(self):
         if self.camera is None:
             print("Opening camera...")
             self.camera = cv2.VideoCapture(self.cam_index, cv2.CAP_DSHOW)
+            # Thiết lập cơ bản
             self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-            self.is_open = True
+            self.camera.set(cv2.CAP_PROP_FPS, 30)
+            # Có thể thử (không phải backend nào cũng hỗ trợ):
+            self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
             if not self.camera.isOpened():
                 raise RuntimeError(f"Không thể mở camera index {self.cam_index}")
-            print("Camera opened.")
-            
-    def get_image(self):
-        return self.capture_image()
 
-    def capture_image(self):
-        if self.camera is None:
-            raise RuntimeError("Camera chưa mở, gọi open_camera() trước.")
-        image = None
+            # Flush vài frame “cũ” ngay sau open
+            for _ in range(self._warmup_frames):
+                self.camera.read()
+
+            self.is_open = True
+            print("Camera opened.")
+
+            # Khởi động thread đọc liên tục
+            self._start_capture_thread()
+
+    def _start_capture_thread(self):
+        if self._capture_thread and self._capture_thread.is_alive():
+            return
+        self._stop_event.clear()
+        self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._capture_thread.start()
+
+    def _capture_loop(self):
+        """
+        Luồng đọc liên tục giữ frame mới nhất (drop frame cũ).
+        """
+        while not self._stop_event.is_set():
+            if not self.is_open or self.camera is None:
+                time.sleep(0.01)
+                continue
+            ret, frame = self.camera.read()
+            if not ret:
+                time.sleep(0.005)
+                continue
+            with self._frame_lock:
+                self._latest_frame = frame
+                self._latest_ts = time.time()
+            # Giảm tải CPU: ngủ rất ngắn; điều chỉnh theo FPS mong muốn
+            time.sleep(0.001)
+
+    def get_image(self):
+        """
+        Lấy frame mới nhất (copy) – tránh stale frame.
+        """
         if not self.is_open:
             print("Camera chưa được mở.")
-            return image
+            return None
+        # Đợi nếu chưa có frame (ví dụ ngay sau khi mở)
+        start_wait = time.time()
+        while self._latest_frame is None and time.time() - start_wait < 1.0:
+            time.sleep(0.01)
+        with self._frame_lock:
+            if self._latest_frame is None:
+                return None
+            return self._latest_frame.copy()
 
+    def capture_image(self):
+        """
+        API tương thích cũ – dùng get_image().
+        """
+        return self.get_image()
+
+    def capture_single_fresh(self, flush_reads=3):
+        """
+        Nếu KHÔNG muốn dùng thread: flush vài frame rồi lấy một.
+        (Giữ làm lựa chọn khác)
+        """
+        if not self.is_open or self.camera is None:
+            raise RuntimeError("Camera chưa mở")
+        for _ in range(flush_reads):
+            self.camera.grab()
         ret, frame = self.camera.read()
-        if not ret:
-            raise RuntimeError("Không đọc được frame từ camera.")
-        # name_image = f"captured_image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-        # cv2.imwrite(f"{save_folder}/{name_image}", frame)
-        return frame
+        return frame if ret else None
 
     def close_camera(self):
-        if self.is_open: 
+        # Dừng thread trước
+        self._stop_event.set()
+        if self._capture_thread and self._capture_thread.is_alive():
+            self._capture_thread.join(timeout=1.0)
+        if self.is_open and self.camera is not None:
             self.camera.release()
             self.is_open = False
             print("Camera released.")
-            
+        cv2.destroyAllWindows()
+
     def start_continuous_grabbing(self):
-        if self.camera is None:
-            raise RuntimeError("Camera chưa mở, gọi open_camera() trước.")
-        image = None
+        """
+        Hiển thị liên tục frame mới nhất (không lag).
+        """
         if not self.is_open:
-            print("Camera chưa được mở.")
-            return image
-        
+            raise RuntimeError("Camera chưa mở")
         while True:
-            ret, frame = self.camera.read()
-            if not ret:
-                print("Không đọc được frame từ camera.")
-                break
+            frame = self.get_image()
+            if frame is None:
+                continue
             image = self._draw_calib(frame)
             img_resize = cv2.resize(image, (1920, image.shape[0] * 1920 // image.shape[1]))
             cv2.imshow("Camera", img_resize)
